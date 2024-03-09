@@ -17,6 +17,7 @@ library(tidyverse)
 library(bslib)
 library(DT)
 library(sortable)
+library(withr)
 
 source('R/CompartmentalModel.R')
 source('R/visnetworkUtils.R')
@@ -100,7 +101,7 @@ ui <- fluidPage(
              # And the initial conditions can be from code, eg `c(S=0,E=0,...)` reactive to what the user entered before
              # There should be a `Run Model` button which generates the plot
              h3("Timesteps:"),
-             aceEditor(outputId = 'modelTimesteps',
+             aceEditor(outputId = 'modelTimestepsText',
                        value = glue::glue('timesteps <- seq({year(Sys.Date())}, {year(Sys.Date())+2}, 1/365)'),
                        autoComplete = 'enabled',
                        minLines = 2,
@@ -366,6 +367,7 @@ server <- function(input, output, session) {
     LOG('observeEvent(parameterTable_cell_edit) updated model...')
   })
   ## 5. Model Output ####
+
   output$modelOutput <- renderPlot({
     
     req(input$runModelBtn)
@@ -387,12 +389,100 @@ server <- function(input, output, session) {
     filename = function() {
       paste0("project-", Sys.Date(), ".zip")
     },
+    contentType = "application/zip",
     content = function(file) {
       LOG('downloadProject() called')
       mod <- cm()
-      saveRDS(mod, file = "cm.rds")
-      saveRDS(modelParameters(), file = "modelParameters.rds")
-      zip(file, c("cm.rds", "modelParameters.rds"))
+      # Create a temporary directory, save files to it, zip it and send the result
+      with_tempdir(
+        clean = TRUE,
+        pattern = 'shweshweModel',
+        code = {
+          # We need .Rproj, model.R, shweshwe.rds and README.md
+          # .Rproj
+          LOG('* Writing .Rproj')
+          projectName <- "myModel" # TODO: Let user specify project name
+          fnameProject <- file.path(getwd(), paste0(projectName,".Rproj"))
+          txtProject <- paste0("Project: ",projectName)
+          writeLines(txtProject, fnameProject)
+          
+          # model.R
+          cm2R <- function(cm) {
+            modelTimestepsText <- input$modelTimestepsText # FIXME: There is no validation done on input$modelTimestepsText
+            txt <- paste0(c(
+              "library(deSolve)\n",
+              "library(tidyverse)\n",
+              "\n",
+              "rates <- ", makeRatesFunction(cm),
+              "\n",
+              "runModel <- function(timesteps, initialConditions, parameters) {\n",
+              "  mod <- ode(y = initialConditions, times = timesteps, func = rates, parms = parameters) |>\n",
+              "    as.data.frame() |>\n",
+              "    as_tibble() |>\n",
+              '    tidyr::pivot_longer(cols = !time, names_to = "compartment", values_to = "population") |>\n',
+              '    dplyr::mutate(compartment = factor(compartment, levels=names(initialConditions)))\n',
+              "  return(mod)\n",
+              "}\n",
+              "\n",
+              modelTimestepsText,
+              "\n",
+              "plotModel <- function(mod) {\n",
+              "               ggplot2::ggplot(mod) +\n",
+              "                 ggplot2::aes(x = time, y = population, color = compartment) +\n",
+              "                 ggplot2::geom_line() +\n",
+              '                 labs(title = "Compartmental Model",\n',
+              '                      color = "Compartment",\n',
+              '                      x = "Time",\n',
+              '                      y = "Population")\n',
+              "}\n",
+              "\n",
+              "# Example usage\n",
+              "\n",
+              "initialConditions <- c(",
+              paste0(names(cm$initialConditions),'=',cm$initialConditions,collapse=", "),
+              ")\n",
+              "parameters <- c(",
+              paste0(names(cm$parameters),'=',cm$parameters,collapse=", "),
+              ")\n",
+              "mod <- runModel(timesteps, initialConditions, parameters)\n",
+              "plotModel(mod)\n"
+            ), collapse = "")
+            return(txt)
+          }
+          LOG("* Writing model.R")
+          fnameModel <- file.path(getwd(), "model.R")
+          txtModel <- cm2R(mod)
+          writeLines(txtModel, fnameModel)
+          
+          # shweshwe.rds
+          LOG("* Writing shweshwe.rds")
+          fnameShweshwe <- file.path(getwd(), "shweshwe.rds")
+          list(cm=mod,
+               modelParameters=modelParameters()) |>
+            saveRDS(file = fnameShweshwe)
+          
+          # README.md
+          LOG("* Writing README.md")
+          fnameReadme <- file.path(getwd(), "README.md")
+          txtReadme <- paste0(c(
+            "# Project: ", projectName, "\n",
+            "\n",
+            "This project was created using the shweshwe app.\n",
+            "\n",
+            "## Files\n",
+            "\n",
+            "- `model.R`: R script containing the model code and example usage\n",
+            "- `shweshwe.rds`: RDS file containing the model and model parameters\n",
+            "- `README.md`: This file\n"
+          ), collapse = "")
+          writeLines(txtReadme, fnameReadme)
+          
+          # Zip the files
+          LOG("* Zipping files")
+          zip(file, files = map_chr(c(fnameProject, fnameModel, fnameShweshwe, fnameReadme),
+                                    basename))
+        }
+      )
     }
   )
 }
