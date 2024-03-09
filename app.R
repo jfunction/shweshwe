@@ -23,7 +23,7 @@ source('R/visnetworkUtils.R')
 source('R/logging.R')
 LOG <- makeLogger(default_level = LEVEL$TRACE)
 setLogLevel(LEVEL$TRACE)
-LOG$trace("App starting")
+LOG("App starting")
 
 theme <- bs_theme(version = 5, 
                   preset = "simplex",
