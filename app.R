@@ -25,6 +25,9 @@ source('R/visnetworkUtils.R')
 source('R/logging.R')
 source("R/config.R")
 
+# Note: deploy with source("deployment/deployApp.R")
+#              then deployAppDev()
+
 conf = getConfig(localProfile = 'dev')
 
 LOG <- makeLogger(default_level = LEVEL$TRACE)
