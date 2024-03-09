@@ -324,7 +324,7 @@ server <- function(input, output, session) {
     LOG('renderDT(initialConditionsTable) called')
     mod <- cm()
     ics <- mod$initialConditions
-    tibble(Compartment=names(ics), Value=unname(ics)) %>%
+    tibble(Compartment=names(ics), `Initial Value`=unname(ics)) %>%
       datatable(editable = list(target = "cell", disable = list(columns = 0)),
                 options = list(searching = FALSE,
                                paging = FALSE,
