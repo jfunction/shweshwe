@@ -18,13 +18,19 @@ library(bslib)
 library(DT)
 library(sortable)
 library(withr)
+library(config)
 
 source('R/CompartmentalModel.R')
 source('R/visnetworkUtils.R')
 source('R/logging.R')
+source("R/config.R")
+
+conf = getConfig(localProfile = 'dev')
+
 LOG <- makeLogger(default_level = LEVEL$TRACE)
-setLogLevel(LEVEL$TRACE)
-LOG("App starting")
+setLogLevel(conf$LogLevel)
+LOG("LOG level set to {conf$LogLevel}.", level = LEVEL$INFO)
+LOG("App starting", level = LEVEL$INFO)
 
 theme <- bs_theme(version = 5, 
                   preset = "simplex",

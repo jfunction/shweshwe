@@ -1,0 +1,8 @@
+default:
+  LogLevel: trace
+
+dev:
+  LogLevel: trace
+
+shinyapps:
+  LogLevel: info
