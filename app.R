@@ -53,6 +53,10 @@ ui <- fluidPage(
   title = "Compartmental Model Boostrap",
   useShinyjs(),
   theme = theme,
+  # style:
+  tags$style(HTML(paste('#primaryTabs { background-image: url("img.png");}',
+                        '#primaryTabs > li > a:not(.active) {background: #f4f4f6DD;border-top-left-radius: 10px;border-top-right-radius: 10px;}',
+                        '',sep='\n'))),
   tabsetPanel(
     id="primaryTabs",
     ## 1. "Welcome" ####
