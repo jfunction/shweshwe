@@ -151,6 +151,7 @@ server <- function(input, output, session) {
   hideTab("primaryTabs", "Model Output")
   hideTab("primaryTabs", "Project Download")
   
+  LOG("Hid primary tabs")
   # Setup the cascade/wizard for tabs
   observeEvent(input$startModelBtn,{
                        updateTabsetPanel(session, "primaryTabs", "Model Design")
@@ -280,7 +281,8 @@ server <- function(input, output, session) {
                     }) |>
       as.data.frame()
     LOG('observeEvent(input$graphNodes) updating cm...')
-    cmNew <- updateCMFromVN(cm = cm(), vn = visNetwork(nodes, edges))
+    vn = visNetwork(nodes, edges)
+    cmNew <- updateCMFromVN(cm = cm(), vn = vn)
     cm(cmNew)
   })
   # bindEvent({input$codeVisNetwork_graphChange}, {

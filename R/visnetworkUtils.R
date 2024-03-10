@@ -99,7 +99,7 @@ collectSymbols <- function(rates, excludedSymbols=c('S','E','I','R','.pop','N'))
   # a single character vector of everything 
   # excluding that which is passed into excludedSymbols
   collapsed <- map(rates, function(x) mt_findSymbolsRecursively(x, excludedSymbols)) |> unlist() |> as.character() |> unique()
-  collapsed %>% setdiff(excludedSymbols)
+  collapsed |> setdiff(excludedSymbols)
 }
 
 CM2VN <- function(cm) {
