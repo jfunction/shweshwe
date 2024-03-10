@@ -139,3 +139,90 @@ runVN2CNTest <- function() {
 }
 
 # runVN2CNTest()
+
+## VN2DrawIO
+xmlCompartment <- function(tbRow, tbOther) {
+  with(as.list(tbRow, tbOther), {
+    glue::glue('
+        <mxCell id="{compartmentsUUID}-{compartmentIndex}" value="`{compartment}`" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+            <mxGeometry x="{x}" y="{y}" width="40" height="40" as="geometry" />
+        </mxCell>')
+  })
+}
+
+xmlTransition <- function(tbRow, tbOther) {
+  with(as.list(tbRow, tbOther),{
+    glue::glue('
+          <mxCell id="{transitionsUUID}-{transitionIndex}" value="{label}" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="{compartmentsUUID}-{src.ID}" target="{compartmentsUUID}-{dst.ID}" edge="1">
+            <mxGeometry relative="1" as="geometry" />
+          </mxCell>')
+  })
+}
+
+xmlDiagram <- function(xmlCompartmentsTxt, xmlTransitionsTxt) {
+  with(list(xmlCompartmentsTxt = xmlCompartmentsTxt, xmlTransitionsTxt = xmlTransitionsTxt), {
+    glue::glue('
+        <mxfile host="app.diagrams.net" modified="2023-08-25T12:01:46.013Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.54" etag="BJcitGzL7aEb84nDGWfy" version="21.6.9" type="device">
+  <diagram id="Dpav7CHE1rxV_vT-ojmE" name="Page-1">
+    <mxGraphModel dx="372" dy="378" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+		{xmlCompartmentsTxt}
+		{xmlTransitionsTxt}
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>')
+  })
+}
+
+visNetwork2Drawio <- function(vn, filename = "diagram.drawio") {
+  graphNodes <- vn$x$nodes # id,label,(x,y)
+  missingNodeCols <- c("id","label","x","y") |> setdiff(colnames(graphNodes))
+  if(length(missingNodeCols)!=0) {
+    stop(paste0("Error making Drawio from visnetwork. Expected node columns id,label,x,y but got ",paste0(missingNodeCols,collapse=",")))
+  }
+  graphEdges <- vn$x$edges # from,to,(label)
+  missingEdgeCols <- c("from","to","label") |> setdiff(colnames(graphEdges))
+  if (any(missingEdgeCols %in% c("label"))) {
+    warning("The edges data.frame should have a column `label`. If not, the labels will all be empty.")
+    graphEdges <- graphEdges |> mutate(label="")
+  } else if(length(missingEdgeCols)!=0) {
+    stop("Error making Drawio from visnetwork. Expected edge columns from,to,label but got ",paste0(missingEdgeCols,collapse=","))
+  }
+  
+  compartmentsUUID = '_PVGUrJauaZoBftJVT4O'
+  transitionsUUID = 'QGI5SdNPsL6WamnX0T07'
+  
+  tbCompartments <- graphNodes |>
+    transmute(ID=id,
+              compartment=label,
+              x=x-min(x)+50,
+              y=y-min(y)+50) |>
+    as_tibble()
+  
+  tbTransitions <- graphEdges |>
+    rowid_to_column('transitionID') |>
+    rename(src.ID=from, dst.ID=to) |>
+    left_join(tbCompartments |> select(src.ID=ID, src.x=x, src.y=y), by=join_by("src.ID")) |>
+    left_join(tbCompartments |> rename(dst.ID=ID, dst.x=x, dst.y=y), by=join_by("dst.ID"))
+  
+  xmlTransitionsTxt <- tbTransitions |>
+    rowid_to_column(var='transitionIndex') |>
+    mutate(compartmentsUUID=compartmentsUUID, transitionsUUID=transitionsUUID) |> 
+    rowwise() |>
+    group_map(xmlTransition) |>
+    paste0(collapse='\n')
+  
+  xmlCompartmentsTxt <- tbCompartments |>
+    rowid_to_column(var='compartmentIndex') |>
+    mutate(compartmentsUUID=compartmentsUUID, transitionsUUID=transitionsUUID) |>
+    rowwise() |>
+    group_map(xmlCompartment) |>
+    paste0(collapse='\n')
+  
+  # Now we need to use these to construct the drawio file
+  drawioTxt <- xmlDiagram(xmlCompartmentsTxt, xmlTransitionsTxt)
+  drawioTxt
+}

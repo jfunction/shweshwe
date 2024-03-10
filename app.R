@@ -57,7 +57,8 @@ ui <- fluidPage(
   # style:
   tags$style(HTML(paste('#primaryTabs { background-image: url("img.png");}',
                         '#primaryTabs > li > a:not(.active) {background: #f4f4f6DD;border-top-left-radius: 10px;border-top-right-radius: 10px;}',
-                        '',sep='\n'))),
+                        'a#downloadDrawioHidden {display:none}',
+                        sep='\n'))),
   tabsetPanel(
     id="primaryTabs",
     ## 1. "Welcome" ####
@@ -73,7 +74,10 @@ ui <- fluidPage(
              fluidRow(column(12, h1("Model Design"))),
              fluidRow(column(12, p("In this tab, you will create a graph representing the model structure including compartment names and expressions for transition rates."))),
              fluidRow(column(12, p("The graph will be used to create the model code in the next tab"))),
-             fluidRow(column(8,h3("Model Structure")),
+             fluidRow(column(2,h3("Model Structure")),
+                      column(2,actionButton(inputId = 'downloadDrawio', label = "Download drawio")),
+                      column(4,fileInput(inputId = 'uploadDrawio', label = NULL, buttonLabel = "Upload drawio", multiple = FALSE, accept = ".drawio"),
+                               downloadButton(outputId = 'downloadDrawioHidden', label="d")),
                       column(2,h3("Initial Conditions")),
                       column(2,actionButton(inputId = "updateCompartmentOrder", "Reorder"))),
              fluidRow(
@@ -285,7 +289,58 @@ server <- function(input, output, session) {
     vn = visNetwork(nodes, edges)
     cmNew <- updateCMFromVN(cm = cm(), vn = vn)
     cm(cmNew)
+    # Update drawioTxt
+    LOG('dd2. Updating drawioTxt...')
+    drawioTxtRaw <- visNetwork2Drawio(vn)
+    drawioTxt(drawioTxtRaw)
+    # writeLines(drawioTxt, filename)
   })
+  
+  awaitingDrawioDownload <- reactiveVal(FALSE)
+  
+  drawioTxt <- reactiveVal()
+  observeEvent(drawioTxt(),{
+    if (awaitingDrawioDownload()) {
+      LOG("dd3. Clicking downloadDrawioHidden button to download drawio file...")
+      runjs("document.getElementById('downloadDrawioHidden').click();")
+    }
+  })
+  # Download drawio file
+  observeEvent(input$downloadDrawio, {
+    # When the user clicks this button, we will update the visNetwork which will trigger
+    # the graphNodes reactive. That will update the drawioTxt() reactive. When
+    # the drawioTxt() updates it tests if awaitingDrawioDownload is TRUE,
+    # in which case it will click the (hidden) downloadDrawioHidden button which
+    # will download the file using the drawioTxt() value.
+    
+    # It's unfortunate that it had to be this complicated, but the visnetwork
+    # does not expose a way to get the visNetwork object state directly.
+    # Also when runjs clicks the button the actual click can happen before
+    # the drawioTxt reactive actually updates.
+    LOG('dd1. downloadDrawio clicked, setting awaitingDrawioDownload to TRUE and updating the visNetwork')
+    awaitingDrawioDownload(TRUE)
+
+    visNetworkProxy("codeVisNetwork") %>%
+      visGetEdges(input='graphEdges') %>%
+      visGetNodes(input='graphNodes')
+  })
+  observeEvent(input$codeVisNetwork_positions, {
+    browser()
+  })
+  
+  output$downloadDrawioHidden <- downloadHandler(
+    filename = function(){'model.drawio'},
+    content = function(file) {
+      LOG('dd4. downloadDrawioHidden called, writing drawioTxt to file for download...')
+      withr::with_tempfile("tmp", {
+        write_file(drawioTxt(), tmp)
+        file.copy(tmp, file)
+      })
+      awaitingDrawioDownload(FALSE)
+    })
+  # This is needed since we are hiding the download button, see github.com/rstudio/shiny/issues/3606
+  outputOptions(output, "downloadDrawioHidden", suspendWhenHidden = FALSE)
+  
   # bindEvent({input$codeVisNetwork_graphChange}, {
   #   print(1)
   #   visNetworkProxy("network_proxy_nodes")
@@ -357,7 +412,15 @@ server <- function(input, output, session) {
   output$parameterTable <- renderDT({
     LOG('renderDT(parameterTable) called')
     modelParameters() %>%
-      datatable(editable = list(target = "cell", disable = list(columns = 0)), rownames = FALSE)
+      datatable(editable = list(target = "cell", disable = list(columns = 0)),
+                options = list(searching = FALSE,
+                               paging = FALSE,
+                               info = FALSE,
+                               ordering = FALSE),
+                selection = "none",
+                # better theming for the table
+                class = 'compact cell-border stripe',
+                rownames = FALSE)
   })
   # When user edits the parameterTable, update the model
   observeEvent(input$parameterTable_cell_edit, {
