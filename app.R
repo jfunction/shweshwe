@@ -35,9 +35,10 @@ setLogLevel(conf$LogLevel)
 LOG("LOG level set to {conf$LogLevel}.", level = LEVEL$INFO)
 LOG("App starting", level = LEVEL$INFO)
 
-theme <- bs_theme(version = 5, 
-                  preset = "simplex",
-                  primary = "#6E82B4",
+theme <- bs_theme(version = 5,
+                  preset = "pulse",
+                  primary = "#314996",
+                  secondary = "rgb(145, 148, 212)", 
                   font_scale = NULL)
 
 model_types <- c(
