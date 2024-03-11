@@ -53,7 +53,7 @@ model_types <- c("Generalized compartmental model")
 
 # > UI ####
 ui <- fluidPage(
-  title = "Compartmental Model Boostrap",
+  title = "Shweshwe",
   useShinyjs(),
   theme = theme,
   # style:
@@ -65,9 +65,8 @@ ui <- fluidPage(
     id="primaryTabs",
     ## 1. "Welcome" ####
     tabPanel("Welcome", 
-             h1("Welcome to the Compartmental Model Bootstrap App"),
-             p("This app is designed to walk you through the process of creating a compartmental model in R."),
-             p("The app will guide you through the process of creating a model, writing the code, entering parameter values, running the model, and downloading the project."),
+             h1("Welcome to the Shweshwe - an application for rapid prototyping of R code for  Compartmental Models"),
+             p("The app will guide you through the process of creating a model, specifying the required values, running your model, and downloading a prototype R project."),
              p("The app is designed to be a starting point for working with your compartmental model in R. It is not a full-featured model building tool, but rather a way to get started."),
              actionButton(inputId = "startModelBtn", "Lets go!")
     ),
