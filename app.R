@@ -329,9 +329,6 @@ server <- function(input, output, session) {
       visGetEdges(input='graphEdges') %>%
       visGetNodes(input='graphNodes')
   })
-  observeEvent(input$codeVisNetwork_positions, {
-    browser()
-  })
   
   output$downloadDrawioHidden <- downloadHandler(
     filename = function(){'model.drawio'},
