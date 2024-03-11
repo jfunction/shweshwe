@@ -142,7 +142,7 @@ ui <- fluidPage(
              h1("About"),
              p("This app was created by Jared Norman at the Modelling and Simulation Hub, Africa (MASHA)."),
              p("If you have any questions or issues, please visit the issue tracker"),
-             a("Issue Tracker", href = "x"),
+             a("Issue Tracker", href = "https://github.com/jfunction/shweshwe/issues"),
              p("This app is licensed under the MIT License.")
     )
   )
