@@ -590,6 +590,7 @@ server <- function(input, output, session) {
       )
     }
   )
+  session$allowReconnect(TRUE)
 }
 
 shinyApp(ui, server)
