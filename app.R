@@ -61,6 +61,10 @@ ui <- fluidPage(
                         '#primaryTabs > li > a:not(.active) {background: #f4f4f6DD;border-top-left-radius: 10px;border-top-right-radius: 10px;}',
                         'a#downloadDrawioHidden {display:none}',
                         sep='\n'))),
+  tags$head(
+    tags$link(rel='icon', 
+              href=base64enc::dataURI(file='www/favicon.ico', mime='image/x-icon'))
+  ),
   tabsetPanel(
     id="primaryTabs",
     ## 1. "Welcome" ####
