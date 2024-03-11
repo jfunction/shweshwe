@@ -12,13 +12,15 @@
 library(shiny)
 library(shinyjs)
 library(shinyAce)
-library(visNetwork)
 library(tidyverse)
 library(bslib)
 library(DT)
 library(sortable)
 library(withr)
 library(config)
+# devtools package has a install_git function which you should pass the URL to:
+# 'https://github.com/jfunction/visNetwork', then:
+library(visNetwork) # NB - require a special version which implements visReplaceGraph
 
 source('R/CompartmentalModel.R')
 source('R/visnetworkUtils.R')
@@ -375,6 +377,27 @@ server <- function(input, output, session) {
     cmNew$initialConditions <- cmNew$initialConditions[compartments]
     cm(cmNew)
     removeModal()
+  })
+  
+  ### >upload drawio ####
+  observeEvent(input$uploadDrawio, {
+    LOG('observeEvent(input$uploadDrawio) called')
+    dio <- Drawio(fname = input$uploadDrawio$datapath)
+    compartments <- dio$pages[[1]]$compartments |>
+      arrange(compartmentNameSimple) |>
+      transmute(label=as.character(compartmentNameSimple),
+                x=x,
+                y=y) |>
+      rowid_to_column(var = "id")
+    transitions <- dio$pages[[1]]$transitions |>
+      transmute(from=as.integer(src),
+                to=as.integer(dst),
+                label=transitionLabel)
+
+    visNetworkProxy("codeVisNetwork") |>
+      visReplaceGraph(nodes=compartments, edges=transitions) |>
+      visGetEdges(input='graphEdges') |>
+      visGetNodes(input='graphNodes')
   })
   
   ### >initialConditionsTable ####
