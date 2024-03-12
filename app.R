@@ -69,7 +69,8 @@ ui <- fluidPage(
     id="primaryTabs",
     ## 1. "Welcome" ####
     tabPanel("Welcome", 
-             h1("Welcome to the Shweshwe - an application for rapid prototyping of R code for  Compartmental Models"),
+             h1("Welcome to the Shweshwe"),
+             h3("An application for rapid prototyping of R code for Compartmental Models of Infectious Disease"),
              p("The app will guide you through the process of creating a model, specifying the required values, running your model, and downloading a prototype R project."),
              p("The app is designed to be a starting point for working with your compartmental model in R. It is not a full-featured model building tool, but rather a way to get started."),
              actionButton(inputId = "startModelBtn", "Lets go!")
