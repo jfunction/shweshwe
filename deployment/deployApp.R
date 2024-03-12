@@ -2,7 +2,8 @@ library(tidyverse)
 
 prodOpts <- list(
   Dev = 'ShweshweDev',
-  QA = 'ShweshweQA'
+  QA = 'ShweshweQA',
+  Prod = 'shweshwe'
 )
 
 deployApp <- function(prodOpt) {
@@ -35,6 +36,14 @@ deployAppDev <- function() {
 deployAppQA <- function() {
   rstudioapi::jobRunScript(path = "deployment/deployQA.R",
                            name = "deployAppQA",
+                           workingDir = here::here(),
+                           importEnv = FALSE,
+                           exportEnv = FALSE)
+}
+
+deployAppProd <- function() {
+  rstudioapi::jobRunScript(path = "deployment/deployProd.R",
+                           name = "deployAppProd",
                            workingDir = here::here(),
                            importEnv = FALSE,
                            exportEnv = FALSE)
