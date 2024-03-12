@@ -278,7 +278,7 @@ server <- function(input, output, session) {
                     function(nodeID) {
                       node = input$graphNodes[[nodeID]]
                       tibble(id=nodeID,
-                             label=node$label,
+                             label=coalesce(node$label, node$hiddenLabel),
                              x=node$x,
                              y=node$y)
                     }) |>
@@ -288,7 +288,7 @@ server <- function(input, output, session) {
                     function(edge) {
                       tibble(from=nodeID_to_compartmentID[edge$from],
                            to=nodeID_to_compartmentID[edge$to],
-                           label=edge$label)
+                           label=coalesce(edge$label, edge$hiddenLabel))
                     }) |>
       as.data.frame()
     LOG('observeEvent(input$graphNodes) updating cm...')
