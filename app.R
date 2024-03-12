@@ -106,7 +106,10 @@ ui <- fluidPage(
     ),
     ## 4. "Parameter Values" ####
     tabPanel("Parameter Values",
-             h1("Parameter Values"),
+             fluidRow(column(2, h1("Parameter Values")),
+                      column(2, downloadButton(outputId = "downloadModelParameters", label = "Download parameters")),
+                      column(8, fileInput(inputId = "uploadModelParameters", label = NULL, buttonLabel = "Upload parameters", multiple = FALSE, accept = ".csv")),
+                      ),
              p("In this tab, you will enter parameter values for the model."),
              p("The parameter values will be used to run the model in the next tab"),
              # I thought about how to build on parameters like lambda
@@ -469,6 +472,33 @@ server <- function(input, output, session) {
     })
     LOG('observeEvent(parameterTable_cell_edit) updated model...')
   })
+  # download/upload modelParameters()
+  output$downloadModelParameters <- downloadHandler(
+    filename = function() {
+      paste0("parameters-", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      write.csv(modelParameters(), file, row.names = FALSE)
+    }
+  )
+  
+  observeEvent(input$uploadModelParameters, {
+    LOG('observeEvent(uploadModelParameters) called')
+    req(input$uploadModelParameters)
+    inFile <- input$uploadModelParameters
+    if (is.null(inFile)) {
+      return(NULL)
+    }
+    newModelParameters <- read.csv(inFile$datapath) |>
+      rename(newValue=value)
+
+    mergedModelParameters <- modelParameters() |>
+      left_join(newModelParameters, by=join_by("parameter")) |>
+      transmute(parameter, value=coalesce(newValue, value))
+
+    modelParameters(mergedModelParameters)
+  })
+  
   ## 5. Model Output ####
 
   output$modelOutput <- renderPlot({
@@ -482,6 +512,14 @@ server <- function(input, output, session) {
     print(makeRatesFunction(mod))
     print("Parameters")
     print(mod$parameters)
+    latestModelParameters <- modelParameters() |>
+      pull(value, name = parameter) |>
+      as.list()
+    if (!setequal(latestModelParameters,mod$parameters)) {
+      LOG("Replacing with:")
+      print(latestModelParameters)
+      mod$parameters <- latestModelParameters
+    }
     print("Timesteps")
     mod$timesteps <- withr::with_environment(new.env(), {
       txt <- input$modelTimestepsText
