@@ -506,7 +506,7 @@ server <- function(input, output, session) {
         clean = TRUE,
         pattern = 'shweshweModel',
         code = {
-          # We need .Rproj, model.R, shweshwe.rds and README.md
+          # We need .Rproj, model.R, diagram.drawio, shweshwe.rds and README.md
           # .Rproj
           LOG('* Writing .Rproj')
           projectName <- "myModel" # TODO: Let user specify project name
@@ -562,6 +562,12 @@ server <- function(input, output, session) {
           txtModel <- cm2R(mod)
           writeLines(txtModel, fnameModel)
           
+          # diagram.drawio
+          LOG("* Writing diagram.drawio")
+          fnameDiagram <- file.path(getwd(), "diagram.drawio")
+          txtDiagram <- drawioTxt()
+          writeLines(txtDiagram, fnameDiagram)
+          
           # shweshwe.rds
           LOG("* Writing shweshwe.rds")
           fnameShweshwe <- file.path(getwd(), "shweshwe.rds")
@@ -587,7 +593,11 @@ server <- function(input, output, session) {
           
           # Zip the files
           LOG("* Zipping files")
-          zip(file, files = map_chr(c(fnameProject, fnameModel, fnameShweshwe, fnameReadme),
+          zip(file, files = map_chr(c(fnameProject,
+                                      fnameModel, 
+                                      fnameDiagram,
+                                      fnameShweshwe,
+                                      fnameReadme),
                                     basename))
         }
       )
