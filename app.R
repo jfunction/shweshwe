@@ -482,8 +482,13 @@ server <- function(input, output, session) {
     print(makeRatesFunction(mod))
     print("Parameters")
     print(mod$parameters)
-    print("Times")
-    print(input$timesteps)
+    print("Timesteps")
+    mod$timesteps <- withr::with_environment(new.env(), {
+      txt <- input$modelTimestepsText
+      eval(parse(text=txt))
+      timesteps
+    })
+    print(mod$timesteps)
     print("Simulate & plot")
     plot(mod)
   })
